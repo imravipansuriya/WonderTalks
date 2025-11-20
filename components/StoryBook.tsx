@@ -2,7 +2,8 @@ import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { StoryPage } from '../types';
 import { generateIllustration, generateSpeech, continueInteractiveStory } from '../services/geminiService';
 import { decodeBase64, decodeAudioData, getAudioContext } from '../services/audioUtils';
-import { Play, Home, Volume2, Image as ImageIcon, Mic, Square, RotateCcw, Wand2 } from 'lucide-react';
+import { saveFavorite, getFavorites } from '../services/storageUtils';
+import { Play, Home, Volume2, Image as ImageIcon, Mic, Square, RotateCcw, Wand2, Heart } from 'lucide-react';
 
 interface StoryBookProps {
   initialPage: StoryPage;
@@ -21,6 +22,7 @@ const StoryBook: React.FC<StoryBookProps> = ({ initialPage, onExit }) => {
   const [audioLoading, setAudioLoading] = useState(false);
   const [isPlaying, setIsPlaying] = useState(false);
   const [nextPageLoading, setNextPageLoading] = useState(false);
+  const [isFavorite, setIsFavorite] = useState(false);
 
   // Recording State
   const [isRecording, setIsRecording] = useState(false);
@@ -128,6 +130,7 @@ const StoryBook: React.FC<StoryBookProps> = ({ initialPage, onExit }) => {
     stopAllAudio();
     setCurrentImage(null);
     setRecordingBlobUrl(currentPage.userRecordingUrl || null); // Reset recording state for new page
+    setIsFavorite(false);
 
     // Only load if we haven't cached it
     const cached = assetCache.current[pageIndex];
@@ -135,7 +138,10 @@ const StoryBook: React.FC<StoryBookProps> = ({ initialPage, onExit }) => {
     const loadAssets = async () => {
       // 1. Image
       if (cached?.image) {
-         if (isMounted) setCurrentImage(cached.image);
+         if (isMounted) {
+             setCurrentImage(cached.image);
+             checkIfFavorite(cached.image);
+         }
       } else {
         if (isMounted) setImageLoading(true);
         try {
@@ -143,17 +149,18 @@ const StoryBook: React.FC<StoryBookProps> = ({ initialPage, onExit }) => {
           if (isMounted) {
             setCurrentImage(imgData);
             setImageLoading(false);
-            if (imgData) assetCache.current[pageIndex] = { ...assetCache.current[pageIndex], image: imgData };
+            if (imgData) {
+                 assetCache.current[pageIndex] = { ...assetCache.current[pageIndex], image: imgData };
+                 checkIfFavorite(imgData);
+            }
           }
         } catch (e) {
           if (isMounted) setImageLoading(false);
         }
       }
 
-      // 2. TTS Audio (Only fetch if we don't have a user recording to auto-play?)
-      // Actually, we always fetch TTS so it's available as fallback or option.
+      // 2. TTS Audio
       if (cached?.audioBuffer) {
-        // If we have a user recording, don't auto-play TTS. If not, auto-play TTS.
         if (!currentPage.userRecordingUrl && isMounted) {
            playTTS(cached.audioBuffer);
         }
@@ -169,7 +176,6 @@ const StoryBook: React.FC<StoryBookProps> = ({ initialPage, onExit }) => {
             assetCache.current[pageIndex] = { ...assetCache.current[pageIndex], audioBuffer: buffer };
             setAudioLoading(false);
 
-            // Auto-play logic: prefer user recording if exists (though usually it won't exist on first load of a new page)
             if (!currentPage.userRecordingUrl) {
                 playTTS(buffer);
             }
@@ -188,7 +194,27 @@ const StoryBook: React.FC<StoryBookProps> = ({ initialPage, onExit }) => {
       isMounted = false;
       stopAllAudio();
     };
-  }, [pageIndex, currentPage, playTTS, stopAllAudio]); // Intentionally excludes pages array changes that don't change index
+  }, [pageIndex, currentPage, playTTS, stopAllAudio]); 
+
+  const checkIfFavorite = (url: string) => {
+      const favs = getFavorites();
+      setIsFavorite(favs.some(f => f.imageUrl === url));
+  };
+
+  const handleToggleFavorite = () => {
+      if (!currentImage) return;
+      
+      if (!isFavorite) {
+          saveFavorite({
+              id: crypto.randomUUID(),
+              imageUrl: currentImage,
+              prompt: currentPage.imagePrompt,
+              date: new Date().toISOString()
+          });
+          setIsFavorite(true);
+      } 
+      // We can choose not to allow unfavoriting here for simplicity or implement removeFavorite
+  };
 
   // --- Navigation & Interaction ---
 
@@ -238,11 +264,20 @@ const StoryBook: React.FC<StoryBookProps> = ({ initialPage, onExit }) => {
                     <p className="text-amber-800 font-bold animate-pulse">Painting the scene...</p>
                 </div>
             ) : currentImage ? (
+                <>
                 <img 
                     src={currentImage} 
                     alt="Story Illustration" 
                     className="w-full h-full object-cover animate-fadeIn"
                 />
+                <button 
+                   onClick={handleToggleFavorite}
+                   className="absolute top-4 right-4 p-2 rounded-full bg-white/50 backdrop-blur-sm hover:bg-white transition-all hover:scale-110"
+                   title="Save to Favorites"
+                >
+                    <Heart size={24} className={isFavorite ? "fill-red-500 text-red-500" : "text-white"} />
+                </button>
+                </>
             ) : (
                 <div className="text-amber-400 flex flex-col items-center">
                     <ImageIcon size={48} className="mb-2"/>
@@ -250,7 +285,7 @@ const StoryBook: React.FC<StoryBookProps> = ({ initialPage, onExit }) => {
                 </div>
             )}
             
-            <div className="absolute top-4 right-4 bg-black/30 text-white px-3 py-1 rounded-full backdrop-blur-md font-bold text-sm">
+            <div className="absolute bottom-4 left-4 bg-black/30 text-white px-3 py-1 rounded-full backdrop-blur-md font-bold text-sm">
                 Page {pageIndex + 1}
             </div>
           </div>

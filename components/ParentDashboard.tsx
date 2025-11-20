@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
-import { getStoryHistory, getReadingStats } from '../services/storageUtils';
-import { Story } from '../types';
-import { ArrowLeft, Clock, Book, Calendar, Heart, ShieldCheck } from 'lucide-react';
+import { getStoryHistory, getReadingStats, getFavorites, removeFavorite } from '../services/storageUtils';
+import { Story, FavoriteItem } from '../types';
+import { ArrowLeft, Clock, Book, Calendar, Heart, ShieldCheck, Trash2 } from 'lucide-react';
 
 interface ParentDashboardProps {
   onBack: () => void;
@@ -10,11 +10,18 @@ interface ParentDashboardProps {
 const ParentDashboard: React.FC<ParentDashboardProps> = ({ onBack }) => {
   const [history, setHistory] = useState<Story[]>([]);
   const [stats, setStats] = useState({ totalStories: 0, totalTimeMinutes: 0 });
+  const [favorites, setFavorites] = useState<FavoriteItem[]>([]);
 
   useEffect(() => {
     setHistory(getStoryHistory());
     setStats(getReadingStats());
+    setFavorites(getFavorites());
   }, []);
+
+  const handleDeleteFavorite = (id: string) => {
+      const updated = removeFavorite(id);
+      setFavorites(updated);
+  };
 
   return (
     <div className="min-h-screen bg-slate-50 p-6 md:p-10 font-sans">
@@ -58,15 +65,44 @@ const ParentDashboard: React.FC<ParentDashboardProps> = ({ onBack }) => {
             </div>
           </div>
 
-          <div className="bg-white p-6 rounded-2xl shadow-sm border border-slate-100 flex items-center gap-4 opacity-70 cursor-not-allowed" title="Coming soon">
+          <div className="bg-white p-6 rounded-2xl shadow-sm border border-slate-100 flex items-center gap-4">
             <div className="bg-pink-100 p-4 rounded-full">
               <Heart className="text-pink-600 w-8 h-8" />
             </div>
             <div>
               <p className="text-slate-500 font-medium">Favorites</p>
-              <h3 className="text-xl font-bold text-slate-800">Coming Soon</h3>
+              <h3 className="text-3xl font-bold text-slate-800">{favorites.length}</h3>
             </div>
           </div>
+        </div>
+
+        {/* Favorite Illustrations */}
+        <div className="mb-10">
+            <h2 className="text-xl font-bold text-slate-800 mb-4 flex items-center gap-2">
+                <Heart className="text-pink-500" size={20} fill="currentColor" /> Favorite Moments
+            </h2>
+            {favorites.length === 0 ? (
+                <div className="bg-white p-8 rounded-2xl border border-slate-200 text-center text-slate-400">
+                    Tap the heart icon on story pages to save magical moments here!
+                </div>
+            ) : (
+                <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                    {favorites.map(fav => (
+                        <div key={fav.id} className="group relative aspect-square rounded-xl overflow-hidden shadow-sm">
+                            <img src={fav.imageUrl} alt="Favorite" className="w-full h-full object-cover" />
+                            <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-end justify-end p-2">
+                                <button 
+                                    onClick={() => handleDeleteFavorite(fav.id)}
+                                    className="p-2 bg-white text-red-500 rounded-full hover:bg-red-50"
+                                    title="Remove"
+                                >
+                                    <Trash2 size={18} />
+                                </button>
+                            </div>
+                        </div>
+                    ))}
+                </div>
+            )}
         </div>
 
         {/* Story History List */}

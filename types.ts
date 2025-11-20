@@ -14,6 +14,13 @@ export interface Story {
   durationSeconds: number; // Reading time
 }
 
+export interface FavoriteItem {
+  id: string;
+  imageUrl: string;
+  prompt: string;
+  date: string;
+}
+
 export interface ChatMessage {
   role: 'user' | 'model';
   text: string;
@@ -24,7 +31,9 @@ export enum AppMode {
   STORY_WIZARD = 'STORY_WIZARD',
   READING = 'READING',
   CHAT = 'CHAT',
-  PARENT_DASHBOARD = 'PARENT_DASHBOARD'
+  PARENT_DASHBOARD = 'PARENT_DASHBOARD',
+  GAME_HUB = 'GAME_HUB',
+  GUESSING_GAME = 'GUESSING_GAME'
 }
 
 export interface ParentSettings {

@@ -4,8 +4,10 @@ import StoryWizard from './components/StoryWizard';
 import StoryBook from './components/StoryBook';
 import ChatBuddy from './components/ChatBuddy';
 import ParentDashboard from './components/ParentDashboard';
+import GameHub from './components/GameHub';
+import GuessingGame from './components/GuessingGame';
 import { saveStoryToHistory } from './services/storageUtils';
-import { Bot, BookOpen, Shield } from 'lucide-react';
+import { Bot, BookOpen, Shield, Gamepad2 } from 'lucide-react';
 
 const App: React.FC = () => {
   const [mode, setMode] = useState<AppMode>(AppMode.HOME);
@@ -50,30 +52,41 @@ const App: React.FC = () => {
               WonderTales
             </h1>
             <p className="text-xl md:text-2xl text-white/90 mb-12 font-semibold max-w-md">
-              Read magical stories or chat with a new friend!
+              Read magical stories, play games, or chat!
             </p>
 
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-8 w-full max-w-2xl">
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-6 w-full max-w-4xl">
               <button 
                 onClick={() => setMode(AppMode.STORY_WIZARD)}
-                className="group bg-white p-8 rounded-3xl shadow-xl hover:shadow-2xl transition-all transform hover:-translate-y-2 flex flex-col items-center border-b-8 border-indigo-200 active:border-0 active:translate-y-0"
+                className="group bg-white p-6 rounded-3xl shadow-xl hover:shadow-2xl transition-all transform hover:-translate-y-2 flex flex-col items-center border-b-8 border-indigo-200 active:border-0 active:translate-y-0"
               >
-                <div className="bg-indigo-100 p-6 rounded-full mb-6 group-hover:scale-110 transition-transform duration-300">
-                  <BookOpen size={64} className="text-indigo-600" />
+                <div className="bg-indigo-100 p-5 rounded-full mb-4 group-hover:scale-110 transition-transform duration-300">
+                  <BookOpen size={48} className="text-indigo-600" />
                 </div>
-                <h2 className="text-3xl font-bold text-gray-800 mb-2">Read a Story</h2>
-                <p className="text-gray-500 font-medium">Start a new adventure!</p>
+                <h2 className="text-2xl font-bold text-gray-800 mb-1">Read Story</h2>
+                <p className="text-gray-500 font-medium text-sm">Create a new adventure</p>
+              </button>
+
+              <button 
+                onClick={() => setMode(AppMode.GAME_HUB)}
+                className="group bg-white p-6 rounded-3xl shadow-xl hover:shadow-2xl transition-all transform hover:-translate-y-2 flex flex-col items-center border-b-8 border-teal-200 active:border-0 active:translate-y-0"
+              >
+                 <div className="bg-teal-100 p-5 rounded-full mb-4 group-hover:scale-110 transition-transform duration-300">
+                  <Gamepad2 size={48} className="text-teal-600" />
+                </div>
+                <h2 className="text-2xl font-bold text-gray-800 mb-1">Play Games</h2>
+                <p className="text-gray-500 font-medium text-sm">Fun puzzles & riddles</p>
               </button>
 
               <button 
                 onClick={() => setMode(AppMode.CHAT)}
-                className="group bg-white p-8 rounded-3xl shadow-xl hover:shadow-2xl transition-all transform hover:-translate-y-2 flex flex-col items-center border-b-8 border-emerald-200 active:border-0 active:translate-y-0"
+                className="group bg-white p-6 rounded-3xl shadow-xl hover:shadow-2xl transition-all transform hover:-translate-y-2 flex flex-col items-center border-b-8 border-emerald-200 active:border-0 active:translate-y-0"
               >
-                 <div className="bg-emerald-100 p-6 rounded-full mb-6 group-hover:scale-110 transition-transform duration-300">
-                  <Bot size={64} className="text-emerald-600" />
+                 <div className="bg-emerald-100 p-5 rounded-full mb-4 group-hover:scale-110 transition-transform duration-300">
+                  <Bot size={48} className="text-emerald-600" />
                 </div>
-                <h2 className="text-3xl font-bold text-gray-800 mb-2">Chat with Sparkle</h2>
-                <p className="text-gray-500 font-medium">Ask questions & have fun!</p>
+                <h2 className="text-2xl font-bold text-gray-800 mb-1">Chat</h2>
+                <p className="text-gray-500 font-medium text-sm">Talk with Sparkle</p>
               </button>
             </div>
           </div>
@@ -91,6 +104,10 @@ const App: React.FC = () => {
         return <ChatBuddy onBack={() => setMode(AppMode.HOME)} />;
       case AppMode.PARENT_DASHBOARD:
         return <ParentDashboard onBack={() => setMode(AppMode.HOME)} />;
+      case AppMode.GAME_HUB:
+        return <GameHub onSelectGame={setMode} onBack={() => setMode(AppMode.HOME)} />;
+      case AppMode.GUESSING_GAME:
+        return <GuessingGame onBack={() => setMode(AppMode.GAME_HUB)} />;
       default:
         return null;
     }

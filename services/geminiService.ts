@@ -129,7 +129,7 @@ export const generateSpeech = async (text: string): Promise<string | null> => {
 
 // 5. Chat Bot
 // Uses gemini-3-pro-preview
-export const sendChatMessage = async (history: {role: string, parts: [{text: string}]}[], newMessage: string): Promise<string> => {
+export const sendChatMessage = async (history: {role: string, parts: {text: string}[]}[], newMessage: string): Promise<string> => {
   try {
     const chat = ai.chats.create({
       model: 'gemini-3-pro-preview',
@@ -144,5 +144,65 @@ export const sendChatMessage = async (history: {role: string, parts: [{text: str
   } catch (error) {
     console.error("Error in chat:", error);
     return "Oh no! I lost my train of thought. Can you say that again?";
+  }
+};
+
+// 6. Guessing Game Logic
+const gameRoundSchema = {
+  type: Type.OBJECT,
+  properties: {
+    answer: { type: Type.STRING, description: "The animal or object being described." },
+    clue: { type: Type.STRING, description: "A simple riddle clue describing the object without naming it." },
+    imagePrompt: { type: Type.STRING, description: "Prompt to generate an image of the answer." }
+  },
+  required: ["answer", "clue", "imagePrompt"]
+};
+
+export const startGuessingGameRound = async (): Promise<{answer: string, clue: string, imagePrompt: string}> => {
+  const prompt = `Create a simple riddle for a child. Pick a common animal, vehicle, or object. 
+  Give a clue that describes it but doesn't name it.`;
+
+  try {
+    const response = await ai.models.generateContent({
+      model: "gemini-2.5-flash",
+      contents: prompt,
+      config: {
+        responseMimeType: "application/json",
+        responseSchema: gameRoundSchema
+      }
+    });
+    return JSON.parse(response.text || "{}");
+  } catch (error) {
+    console.error("Error starting game round:", error);
+    throw error;
+  }
+};
+
+const checkAnswerSchema = {
+  type: Type.OBJECT,
+  properties: {
+    correct: { type: Type.BOOLEAN, description: "Whether the user's guess is correct." },
+    feedback: { type: Type.STRING, description: "Friendly feedback to the child. If wrong, give a hint." }
+  },
+  required: ["correct", "feedback"]
+};
+
+export const checkGameAnswer = async (target: string, userGuess: string): Promise<{correct: boolean, feedback: string}> => {
+  const prompt = `The answer is "${target}". The child guessed "${userGuess}". 
+  Is this correct (or very close)? respond in JSON. If wrong, be encouraging and give a tiny hint.`;
+
+  try {
+    const response = await ai.models.generateContent({
+      model: "gemini-2.5-flash",
+      contents: prompt,
+      config: {
+        responseMimeType: "application/json",
+        responseSchema: checkAnswerSchema
+      }
+    });
+    return JSON.parse(response.text || "{}");
+  } catch (error) {
+    console.error("Error checking answer:", error);
+    return { correct: false, feedback: "I'm having trouble hearing you, try again!" };
   }
 };
