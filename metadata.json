@@ -1,0 +1,7 @@
+{
+  "name": "Magic Storybook",
+  "description": "An interactive storybook creator for kids that narrates stories and generates magical illustrations on the fly.",
+  "requestFramePermissions": [
+    "microphone"
+  ]
+}
